@@ -1,4 +1,8 @@
+'''
+Created on 2018/01/27
 
+@author: hanbing.cheng
+'''
 import numpy as np
 import cv2
 import math
@@ -287,30 +291,31 @@ def getPlateType(src, adaptive_minsv):
 
 def clearLiuDingOnly(img):
     x = 7
-    jump = np.zeros((1, img.shape[0]), np.float32)
+    jump = np.zeros((1, img.shape[0]), np.int)
     for i in range(img.shape[0]):
         jumpCount = 0
         whiteCount = 0
-        for j in range(img.shape[1]):
+        for j in range(img.shape[1] - 1):
             if img[i, j] != img[i, j + 1]:
                 jumpCount = jumpCount + 1
     
             if img[i, j] == 255:
                 whiteCount = whiteCount + 1
                 
-        jump[i] = jumpCount
+        jump[0, i] = jumpCount
 
     for i in range(img.shape[0]):
-        if jump[i] <= x:
+        if jump[0, i] <= x:
             for j in range(img.shape[1]):
                 img[i, j] = 0
-    
+    return img
+
 def clearLiuDing(img):
     fJump = []
     whiteCount = 0
     x = 7
     #imshow("img", img)
-    jump = np.zeros((1, img.shape[0]), int)
+    jump = np.zeros((1, img.shape[0]), np.float32)
     for i in range(img.shape[0]):
         jumpCount = 0
 
@@ -345,9 +350,6 @@ def clearLiuDing(img):
     return (True, img)
 
 def thresholdOtsu(mat):
-    height = mat.shape[0]
-    width = mat.shape[1]
-
     # histogram
     histogram = cv2.calcHist([mat],[0],None,[256],[0,256])
 
@@ -430,3 +432,36 @@ def bFindLeftRightBound1(bound_threshold):
     return (False, posLeft, posRight)
 
 
+def bFindLeftRightBound(bound_threshold):
+    posLeft = 0
+    posRight = 0
+    span = round(bound_threshold.shape[0] * 0.2)
+
+    for i in range(0, bound_threshold.shape[1] - span - 1, 2):
+        whiteCount = 0
+        for k in range(bound_threshold.shape[0]):
+            for l in range(i, i + span, 1):
+                if bound_threshold[k, l] == 255:
+                    whiteCount = whiteCount + 1
+              
+        if whiteCount  / (span * bound_threshold.shape[0]) > 0.36:
+            posLeft = i
+            break
+        
+    span = int(bound_threshold.shape[0] * 0.2)
+
+    for i in range(bound_threshold.shape[1] - 1, span, -2):
+        whiteCount = 0
+        for k in range(bound_threshold.shape[0]):
+            for l in range(i,i - span, -1):
+                if bound_threshold[k, l] == 255:
+                    whiteCount = whiteCount + 1
+
+        if whiteCount  / (span * bound_threshold.shape[0]) > 0.26:
+            posRight = i;
+            break
+        
+    if posLeft < posRight:
+        return (True, posLeft, posRight)
+  
+    return (False, posLeft, posRight)

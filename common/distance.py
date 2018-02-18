@@ -1,3 +1,8 @@
+'''
+Created on 2018/01/27
+
+@author: hanbing.cheng
+'''
 import numpy as np
 
 class AbstractDistance(object):
